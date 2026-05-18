@@ -173,7 +173,6 @@
     }
 
     .card-back {
-      transform: rotateY(180deg);
       padding: 22px;
     }
 
@@ -405,10 +404,10 @@
     });
 
     nextButton.addEventListener("click", () => {
-      if (isWaiting) return;
       if (wordCard.classList.contains("is-flipped")) {
         wordCard.classList.remove("is-flipped");
       }
+      isWaiting = false;
       showNextCard();
     });
 
@@ -503,7 +502,7 @@
         wordCard.style.borderColor = "rgba(188, 92, 99, 0.55)";
       }
 
-      nextButton.style.display = currentIndex < deck.length ? "inline-flex" : "inline-flex";
+      nextButton.style.display = "inline-flex";
       isWaiting = true;
     }
 
