@@ -1,0 +1,16 @@
+apple=alma
+cat=macska
+house=ház
+water=víz
+sun=nap
+book=könyv
+friend=barát
+school=iskola
+car=autó
+dog=kutya
+flower=virág
+window=ablak
+bread=kenyér
+happy=boldog
+rain=eső
+town=város

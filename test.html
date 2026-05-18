@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Szótanuló játék</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --card-border: #30363d;
+      --text: #c9d1d9;
+      --success: #2ea043;
+      --danger: #bc5c63;
+      --accent: #58a6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #1f2a38 0%, #0b1220 40%, #05080f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #app {
+      width: min(100%, 540px);
+      background: rgba(10, 16, 25, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 24px;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 28px 28px 8px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.05;
+    }
+
+    p.description {
+      margin: 14px auto 0;
+      max-width: 42rem;
+      color: #8b98a9;
+      line-height: 1.7;
+    }
+
+    .panel {
+      padding: 22px 24px 28px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel label,
+    .panel .status {
+      font-size: clamp(0.9rem, 1vw, 1rem);
+      color: #8b98a9;
+    }
+
+    .panel input[type="file"] {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: #0f1724;
+      color: var(--text);
+      padding: 12px 14px;
+    }
+
+    .panel small {
+      display: block;
+      color: #94a3b8;
+    }
+
+    .button-row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .button-row button,
+    .action-button {
+      border: none;
+      outline: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.16);
+    }
+
+    .button-row button:hover,
+    .action-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button-start {
+      background: linear-gradient(135deg, #4f9cff, #1b70ff);
+      color: #fff;
+    }
+
+    .button-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .game-panel {
+      display: none;
+      gap: 18px;
+    }
+
+    .game-panel.active {
+      display: grid;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 0 4px;
+      color: #c9d1d9;
+    }
+
+    .card-area {
+      position: relative;
+      perspective: 1200px;
+      min-height: 260px;
+    }
+
+    .card {
+      width: 100%;
+      min-height: 240px;
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: transform 0.8s ease;
+      display: grid;
+      place-items: center;
+      padding: 26px;
+      color: var(--text);
+      text-align: center;
+      position: relative;
+    }
+
+    .card.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      padding: 22px;
+    }
+
+    .card-content {
+      width: 100%;
+      max-width: 420px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .word-display {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+    }
+
+    .choice-buttons {
+      display: grid;
+      gap: 12px;
+    }
+
+    .choice-button {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 14px 16px;
+      transition: background-color 180ms ease, transform 180ms ease;
+      cursor: pointer;
+    }
+
+    .choice-button:hover:not(:disabled) {
+      background: rgba(88, 166, 255, 0.18);
+    }
+
+    .choice-button:disabled {
+      opacity: 0.78;
+      cursor: default;
+    }
+
+    .feedback {
+      display: grid;
+      gap: 8px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .feedback strong {
+      font-size: 1.1rem;
+    }
+
+    .feedback .result {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border-radius: 16px;
+      padding: 0 16px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.95rem;
+    }
+
+    .result.success {
+      background: rgba(46, 160, 67, 0.12);
+      color: #a5f3d6;
+      border-color: rgba(46, 160, 67, 0.28);
+    }
+
+    .result.danger {
+      background: rgba(188, 92, 99, 0.12);
+      color: #fecaca;
+      border-color: rgba(188, 92, 99, 0.28);
+    }
+
+    .final-message {
+      padding: 18px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .final-message span {
+      display: block;
+      margin-top: 10px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 14px;
+      }
+
+      .card {
+        min-height: 220px;
+        padding: 20px;
+      }
+
+      .card-content {
+        gap: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Angol szótanuló</h1>
+      <p class="description">Tölts be egy egyszerű szópárokat tartalmazó .txt fájlt vagy használd az alapértelmezett listát. 10 kérdés, magyar válaszlehetőségek, pontozás és gyors visszajelzés.</p>
+    </header>
+
+    <section class="panel" id="start-panel">
+      <label for="word-file">Szólista betöltése (opcionális)</label>
+      <input type="file" id="word-file" accept=".txt" />
+      <small>A fájl formátuma: <code>apple=alma</code> vagy <code>apple - alma</code> soronként.</small>
+      <div class="button-row">
+        <button class="action-button button-start" id="start-button">Start</button>
+        <button class="action-button button-secondary" id="reset-button" type="button">Alaphelyzet</button>
+      </div>
+      <div class="status" id="file-status">A betöltés nem kötelező. Rögtön kezdhetsz.</div>
+    </section>
+
+    <section class="panel game-panel" id="game-panel">
+      <div class="stats">
+        <div>Pontok: <strong id="score-value">0</strong> / 10</div>
+        <div>Jelenlegi: <strong id="round-value">0</strong> / 10</div>
+      </div>
+
+      <div class="card-area">
+        <div class="card" id="word-card">
+          <div class="card-front card-face">
+            <div class="card-content">
+              <div class="word-display" id="english-word">Start</div>
+              <div class="choice-buttons">
+                <button class="choice-button" data-index="0" id="choice-0"></button>
+                <button class="choice-button" data-index="1" id="choice-1"></button>
+              </div>
+            </div>
+          </div>
+          <div class="card-back card-face">
+            <div class="feedback">
+              <strong id="feedback-title">Válasz</strong>
+              <div class="result" id="feedback-text">Magyar jelentés</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button class="action-button button-start" id="next-button" type="button">Következő</button>
+      </div>
+
+      <div class="final-message" id="final-message" style="display:none;"></div>
+    </section>
+  </div>
+
+  <script>
+    const defaultWords = [
+      { en: "apple", hu: "alma" },
+      { en: "cat", hu: "macska" },
+      { en: "house", hu: "ház" },
+      { en: "water", hu: "víz" },
+      { en: "sun", hu: "nap" },
+      { en: "book", hu: "könyv" },
+      { en: "friend", hu: "barát" },
+      { en: "school", hu: "iskola" },
+      { en: "car", hu: "autó" },
+      { en: "dog", hu: "kutya" },
+      { en: "flower", hu: "virág" },
+      { en: "window", hu: "ablak" },
+      { en: "bread", hu: "kenyér" },
+      { en: "happy", hu: "boldog" },
+      { en: "rain", hu: "eső" },
+      { en: "city", hu: "város" }
+    ];
+
+    const startPanel = document.getElementById("start-panel");
+    const gamePanel = document.getElementById("game-panel");
+    const fileInput = document.getElementById("word-file");
+    const fileStatus = document.getElementById("file-status");
+    const startButton = document.getElementById("start-button");
+    const resetButton = document.getElementById("reset-button");
+    const englishWord = document.getElementById("english-word");
+    const choiceButtons = [document.getElementById("choice-0"), document.getElementById("choice-1")];
+    const wordCard = document.getElementById("word-card");
+    const nextButton = document.getElementById("next-button");
+    const scoreValue = document.getElementById("score-value");
+    const roundValue = document.getElementById("round-value");
+    const feedbackTitle = document.getElementById("feedback-title");
+    const feedbackText = document.getElementById("feedback-text");
+    const finalMessage = document.getElementById("final-message");
+
+    let wordList = [...defaultWords];
+    let deck = [];
+    let currentIndex = 0;
+    let score = 0;
+    let isWaiting = false;
+    let lastResult = null;
+
+    fileInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        fileStatus.textContent = "A fájl nem lett kiválasztva.";
+        wordList = [...defaultWords];
+        return;
+      }
+
+      const content = await file.text();
+      const parsed = parseWordFile(content);
+      if (parsed.length >= 10) {
+        wordList = parsed;
+        fileStatus.textContent = `Sikeresen betöltve ${parsed.length} szó.`;
+      } else {
+        wordList = [...defaultWords];
+        fileStatus.textContent = "A betöltött fájl legalább 10 szópárt kell, hogy tartalmazzon. Az alapértelmezett listát használjuk.";
+      }
+    });
+
+    startButton.addEventListener("click", () => {
+      startGame();
+    });
+
+    resetButton.addEventListener("click", () => {
+      fileInput.value = "";
+      wordList = [...defaultWords];
+      fileStatus.textContent = "A betöltés nem kötelező. Rögtön kezdhetsz.";
+    });
+
+    nextButton.addEventListener("click", () => {
+      if (isWaiting) return;
+      if (wordCard.classList.contains("is-flipped")) {
+        wordCard.classList.remove("is-flipped");
+      }
+      showNextCard();
+    });
+
+    choiceButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        if (isWaiting) return;
+        const selected = button.dataset.index;
+        handleChoice(selected);
+      });
+    });
+
+    function parseWordFile(text) {
+      return text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith("#"))
+        .map((line) => {
+          const separator = line.includes("=") ? "=" : line.includes("-") ? "-" : null;
+          if (!separator) return null;
+          const [left, right] = line.split(separator).map((part) => part.trim());
+          if (!left || !right) return null;
+          return { en: left, hu: right };
+        })
+        .filter(Boolean);
+    }
+
+    function startGame() {
+      if (wordList.length < 10) {
+        alert("Legalább 10 szópár szükséges a játékhoz.");
+        return;
+      }
+      deck = shuffleArray([...wordList]).slice(0, 10);
+      currentIndex = 0;
+      score = 0;
+      isWaiting = false;
+      lastResult = null;
+      scoreValue.textContent = score;
+      roundValue.textContent = 0;
+      finalMessage.style.display = "none";
+      nextButton.style.display = "none";
+      resetCardStyle();
+      startPanel.style.display = "none";
+      gamePanel.classList.add("active");
+      showNextCard();
+    }
+
+    function showNextCard() {
+      if (currentIndex >= deck.length) {
+        finishGame();
+        return;
+      }
+
+      const current = deck[currentIndex];
+      const choices = buildChoices(current);
+      englishWord.textContent = current.en;
+      choiceButtons.forEach((button, index) => {
+        button.textContent = choices[index];
+        button.disabled = false;
+        button.dataset.correct = choices[index] === current.hu ? "true" : "false";
+      });
+
+      currentIndex += 1;
+      roundValue.textContent = currentIndex;
+      feedbackTitle.textContent = "Kérdés";
+      feedbackText.textContent = "Válassz egy választ.";
+      feedbackText.className = "result";
+      feedbackText.classList.remove("success", "danger");
+      wordCard.classList.remove("is-flipped");
+      nextButton.style.display = "none";
+      isWaiting = false;
+    }
+
+    function handleChoice(selectedIndex) {
+      const button = choiceButtons[selectedIndex];
+      const isCorrect = button.dataset.correct === "true";
+      choiceButtons.forEach((btn) => (btn.disabled = true));
+      wordCard.classList.add("is-flipped");
+      lastResult = isCorrect;
+
+      if (isCorrect) {
+        score += 1;
+        scoreValue.textContent = score;
+        feedbackTitle.textContent = "Helyes!";
+        feedbackText.textContent = `A helyes válasz: ${button.textContent}`;
+        feedbackText.className = "result success";
+        wordCard.style.borderColor = "rgba(46, 160, 67, 0.55)";
+      } else {
+        feedbackTitle.textContent = "Helytelen!";
+        const correctButton = choiceButtons.find((btn) => btn.dataset.correct === "true");
+        feedbackText.textContent = `A helyes válasz: ${correctButton.textContent}`;
+        feedbackText.className = "result danger";
+        wordCard.style.borderColor = "rgba(188, 92, 99, 0.55)";
+      }
+
+      nextButton.style.display = currentIndex < deck.length ? "inline-flex" : "inline-flex";
+      isWaiting = true;
+    }
+
+    function finishGame() {
+      gamePanel.classList.remove("active");
+      startPanel.style.display = "block";
+      startPanel.querySelector("h1");
+      const perfect = score === deck.length;
+      finalMessage.style.display = "block";
+      finalMessage.innerHTML = `
+        <strong>${perfect ? "Gratulálok!" : "Játék vége"}</strong>
+        <span>Elért pontszám: ${score} / ${deck.length}.</span>
+        <span>${perfect ? "Teljesen sikerült! 10/10. Ügyes!" : "Próbáld újra, hogy elérd a 10 pontot."}</span>
+      `;
+      wordCard.classList.remove("is-flipped");
+      resetCardStyle();
+    }
+
+    function resetCardStyle() {
+      wordCard.style.borderColor = "var(--card-border)";
+    }
+
+    function buildChoices(currentWord) {
+      const wrongWords = wordList.filter((item) => item.hu !== currentWord.hu);
+      const randomWrong = shuffleArray(wrongWords).slice(0, 1).map((item) => item.hu);
+      const options = [currentWord.hu, ...randomWrong];
+      return shuffleArray(options);
+    }
+
+    function shuffleArray(array) {
+      const cloned = [...array];
+      for (let i = cloned.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
+      }
+      return cloned;
+    }
+  </script>
+</body>
+</html>
