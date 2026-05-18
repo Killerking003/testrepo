@@ -413,7 +413,7 @@
 
     choiceButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        if (isWaiting) return;
+        if (button.disabled) return;
         const selected = button.dataset.index;
         handleChoice(selected);
       });
